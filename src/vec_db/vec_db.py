@@ -14,6 +14,16 @@ from vec_db.utils import chunks_from_md, dicts_to_documents
 
 
 def generate_vecdb(chroma_path: str, collection_name: str, data: List[Document]) -> Chroma:
+    """Создаёт векторную базу данных Chroma из списка документов с использованием HuggingFace-эмбеддингов.
+
+    Args:
+        chroma_path (str): Путь к директории, где будет сохранена.
+        collection_name (str): Имя коллекции в Chroma.
+        data: Список объектов Document, каждый из которых содержит текст (page_content) и метаданные (metadata).
+
+    Returns:
+        Chroma: Экземпляр векторной базы данных Chroma
+    """
     try:
 
         logger.info("Загрузка модели эмбеддингов...")
@@ -37,6 +47,16 @@ def generate_vecdb(chroma_path: str, collection_name: str, data: List[Document])
 
 
 def connect_to_vecdb(chroma_path: str, collection_name: str) -> Chroma:
+    """Подключается к существующей векторной базе данных Chroma.
+
+        Args:
+            chroma_path (str): Путь к директории, где хранится сохранённая
+                векторная база данных.
+            collection_name (str): Имя коллекции.
+
+        Returns:
+            Chroma: Экземпляр векторной базы данных Chroma.
+    """
     try:
         logger.info("Загрузка модели эмбеддингов...")
         embeddings = HuggingFaceEmbeddings(
@@ -59,6 +79,19 @@ def connect_to_vecdb(chroma_path: str, collection_name: str) -> Chroma:
 
 
 async def initialize_db(chroma_path, collection_name, json_path, links):
+    """Инициализирует векторную базу данных: либо загружает существующую, либо создаёт новую.
+
+    Args:
+        chroma_path (str): Путь к директории для хранения/загрузки Chroma DB.
+        collection_name (str): Имя коллекции в Chroma.
+        json_path (str): Путь к JSON-файлу, в котором хранятся предварительно
+            извлечённые документы.
+        links (List[str]): Список URL-адресов, которые будут распаршены,
+            если JSON-файл не найден. Используется для получения исходных данных.
+
+    Returns:
+        Chroma: Готовый экземпляр векторной базы данных Chroma.
+    """
     if not os.path.exists(chroma_path):
         logger.info('Сбор документов...')
         if os.path.exists(json_path):

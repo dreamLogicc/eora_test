@@ -5,6 +5,17 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 async def query(url: str, headers: dict, payload: dict | str) -> dict:
+    """Отправляет асинхронный POST-запрос по указанному URL и возвращает ответ в формате JSON.
+
+    Args:
+        url (str): URL-адрес, на который отправляется POST-запрос.
+        headers (dict): Заголовки HTTP-запроса.
+        payload (dict | str): Тело запроса. Может быть словарём (будет автоматически
+            сериализовано в JSON) или строкой.
+
+    Returns:
+        dict: Ответ сервера, декодированный из JSON.
+    """
     async with aiohttp.ClientSession() as session:
         async with session.post(url, headers=headers, data=payload, ssl=False) as response:
             resp = await response.json()
@@ -12,6 +23,14 @@ async def query(url: str, headers: dict, payload: dict | str) -> dict:
 
 
 async def get_token(client_secret: str) -> str | None:
+    """Запрашивает OAuth-токен доступа к GigaChat API через авторизацию с client_secret.
+
+     Args:
+         client_secret (str): Секретный ключ
+
+     Returns:
+         str: Строка с access_token в случае успешной авторизации.
+     """
     url = 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth'
     payload = {'scope': 'GIGACHAT_API_PERS'}
     headers = {
@@ -27,6 +46,16 @@ async def get_token(client_secret: str) -> str | None:
 
 
 async def get_answer(text: str, access_token: str) -> str | None:
+    """Отправляет запрос к GigaChat API для генерации ответа на пользовательский текст.
+
+    Args:
+        text (str): Входной текст (сообщение от пользователя), на который нужно
+            сгенерировать ответ.
+        access_token (str): Токен доступа.
+
+    Returns:
+        str: Сгенерированный моделью текст ответа
+    """
     url = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions"
     payload = json.dumps({
         "model": "GigaChat-2-Pro",

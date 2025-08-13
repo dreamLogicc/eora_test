@@ -3,6 +3,7 @@ import json
 import requests
 import re
 
+import aiohttp
 from langchain_core.documents import Document
 from typing import List
 from tqdm import tqdm
@@ -11,9 +12,39 @@ from config import GIGACHAT_CLIENT_SECRET, JSON_PATH
 from api_utils.gigachat_api_utils import get_answer, get_token
 from loguru import logger
 
+
+async def query(url: str) -> str:
+    """Отправляет асинхронный POST-запрос по указанному URL и возвращает ответ в формате JSON.
+
+    Args:
+        url (str): URL-адрес, на который отправляется POST-запрос.
+        headers (dict): Заголовки HTTP-запроса.
+        payload (dict | str): Тело запроса. Может быть словарём (будет автоматически
+            сериализовано в JSON) или строкой.
+
+    Returns:
+        dict: Ответ сервера, декодированный из JSON.
+    """
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            resp = await response.text()
+            return resp
+
 async def parse(url: str) -> str:
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html5lib')
+    """Извлекает и структурирует значимый контент с веб-страницы с помощью парсинга и GigaChat.
+
+    Args:
+        url (str): URL веб-страницы, которую необходимо обработать.
+
+    Returns:
+        str: Структурированный текст в формате Markdown, содержащий только
+        релевантную информацию,очищенный от шума и оформленный по заданному шаблону.
+    """
+    try:
+        response = await query(url)
+    except Exception as ex:
+        logger.error(ex)
+    soup = BeautifulSoup(response, 'html5lib')
 
     for script in soup(["script", "style", "noscript", "meta", "link"]):
         script.decompose()
@@ -84,6 +115,16 @@ async def parse(url: str) -> str:
 
 
 async def parse_links(links: List[str]) -> List[Document]:
+    """Асинхронно обрабатывает список веб-ссылок: парсит содержимое, очищает и структурирует текст через LLM.
+
+    Args:
+        links (List[str]): Список URL-адресов, которые необходимо распарсить.
+
+    Returns:
+        List[langchain_core.documents.Document]: Список объектов Document, каждый из которых содержит:
+            - page_content: структурированный текст, очищенный и обработанный GigaChat,
+            - metadata: словарь с ключом 'source' — оригинальной ссылкой.
+    """
     data = []
     for link in tqdm(links):
         data.append(
@@ -95,3 +136,4 @@ async def parse_links(links: List[str]) -> List[Document]:
     with open(JSON_PATH, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
     return [Document(page_content=doc["text"], metadata={"source": doc["source"]}) for doc in tqdm(data)]
+
