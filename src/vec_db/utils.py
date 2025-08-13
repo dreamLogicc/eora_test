@@ -27,7 +27,7 @@ def chunks_from_md(docs: List[Document]) -> List[Document]:
     return splitted_docs
 
 
-def get_context(db: Chroma, query: str):
+def get_context(db: Chroma, query: str) -> str:
     relevant_docs = db.similarity_search_with_score(query, k=5)
     context_parts = []
     for doc, score in relevant_docs:
@@ -40,5 +40,5 @@ def get_context(db: Chroma, query: str):
     context = "\n".join(context_parts)
     return context
 
-def dicts_to_documents(docs: List[dict]):
+def dicts_to_documents(docs: List[dict]) -> List[Document]:
     return [Document(page_content=doc["text"], metadata={"source": doc["source"]}) for doc in docs]
