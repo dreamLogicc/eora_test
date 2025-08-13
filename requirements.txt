@@ -1,0 +1,15 @@
+langchain
+langchain-chroma
+langchain-huggingface
+chromadb
+beautifulsoup4
+requests
+python-dotenv
+html5lib
+torch
+loguru
+tqdm
+sentence-transformers
+aiogram
+aiohttp
+urllib3
