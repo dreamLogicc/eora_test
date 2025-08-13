@@ -1,27 +1,18 @@
-import os
 import asyncio
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from loguru import logger
-from config import BOT_TOKEN, CHROMA_PATH, COLLECTION_NAME, GIGACHAT_CLIENT_SECRET
+from config import BOT_TOKEN, CHROMA_PATH, COLLECTION_NAME, GIGACHAT_CLIENT_SECRET,JSON_PATH
 from api_utils.gigachat_api_utils import get_token, get_answer
-from utils.links import LINKS
-from utils.parser import parse_links
-from vec_db.vec_db import chunks_from_md, generate_vecdb, connect_to_vecdb, get_context
+from parser.links import LINKS
+from vec_db.vec_db import get_context, initialize_db
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-async def initialize_db():
-    if not os.path.exists(CHROMA_PATH):
-        logger.info('Сбор документов...')
-        documents = chunks_from_md(await parse_links(LINKS))
-        return generate_vecdb(CHROMA_PATH, COLLECTION_NAME, documents)
-    return connect_to_vecdb(CHROMA_PATH, COLLECTION_NAME)
-
-db = asyncio.run(initialize_db())
+db = asyncio.run(initialize_db(CHROMA_PATH, COLLECTION_NAME, JSON_PATH, LINKS))
 
 
 @dp.message(Command("start"))

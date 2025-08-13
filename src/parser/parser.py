@@ -1,3 +1,5 @@
+import json
+
 import requests
 import re
 
@@ -5,8 +7,9 @@ from langchain_core.documents import Document
 from typing import List
 from tqdm import tqdm
 from bs4 import BeautifulSoup
-from config import GIGACHAT_CLIENT_SECRET
+from config import GIGACHAT_CLIENT_SECRET, JSON_PATH
 from api_utils.gigachat_api_utils import get_answer, get_token
+from loguru import logger
 
 async def parse(url: str) -> str:
     response = requests.get(url)
@@ -72,11 +75,12 @@ async def parse(url: str) -> str:
         Теперь обработай следующий текст:
         {clean_text}
     """
-
-    token = await get_token(GIGACHAT_CLIENT_SECRET)
-    response = await get_answer(prompt, token)
-
-    return response
+    try:
+        token = await get_token(GIGACHAT_CLIENT_SECRET)
+        response = await get_answer(prompt, token)
+        return response
+    except Exception as ex:
+        logger.error(ex)
 
 
 async def parse_links(links: List[str]) -> List[Document]:
@@ -88,4 +92,6 @@ async def parse_links(links: List[str]) -> List[Document]:
                 'source': link
             }
         )
+    with open(JSON_PATH, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
     return [Document(page_content=doc["text"], metadata={"source": doc["source"]}) for doc in tqdm(data)]

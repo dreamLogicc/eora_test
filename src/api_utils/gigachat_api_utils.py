@@ -1,7 +1,6 @@
 import json
 import urllib3
 import aiohttp
-
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
@@ -12,7 +11,7 @@ async def query(url: str, headers: dict, payload: dict | str) -> dict:
             return resp
 
 
-async def get_token(client_secret: str) -> str:
+async def get_token(client_secret: str) -> str | None:
     url = 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth'
     payload = {'scope': 'GIGACHAT_API_PERS'}
     headers = {
@@ -21,11 +20,13 @@ async def get_token(client_secret: str) -> str:
         'RqUID': 'b83117f0-5720-46ae-8ce1-3b61bef06b1d',
         'Authorization': f'Basic {client_secret}'
     }
+
     response = await query(url, headers, payload)
     return response['access_token']
 
 
-async def get_answer(text: str, access_token: str) -> str:
+
+async def get_answer(text: str, access_token: str) -> str | None:
     url = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions"
     payload = json.dumps({
         "model": "GigaChat-2-Pro",
@@ -50,5 +51,6 @@ async def get_answer(text: str, access_token: str) -> str:
     }
 
     response = await query(url, headers, payload)
-
     return response['choices'][0]['message']['content']
+
+

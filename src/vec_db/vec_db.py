@@ -1,13 +1,19 @@
+import json
+import os
+
 import torch
 
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_text_splitters import MarkdownHeaderTextSplitter
 from loguru import logger
 from langchain_chroma import Chroma
 from typing import List
 
-def generate_vecdb(chroma_path: str, collection_name: str, data: List[Document]):
+from parser.parser import parse_links
+from vec_db.utils import chunks_from_md, dicts_to_documents
+
+
+def generate_vecdb(chroma_path: str, collection_name: str, data: List[Document]) -> Chroma:
     try:
 
         logger.info("Загрузка модели эмбеддингов...")
@@ -30,7 +36,7 @@ def generate_vecdb(chroma_path: str, collection_name: str, data: List[Document])
         raise
 
 
-def connect_to_vecdb(chroma_path, collection_name):
+def connect_to_vecdb(chroma_path: str, collection_name: str) -> Chroma:
     try:
         logger.info("Загрузка модели эмбеддингов...")
         embeddings = HuggingFaceEmbeddings(
@@ -52,37 +58,16 @@ def connect_to_vecdb(chroma_path, collection_name):
         raise
 
 
-def chunks_from_md(docs):
-    headers_to_split_on = [
-        ("###", "Header"),
-    ]
-
-    text_splitter = MarkdownHeaderTextSplitter(headers_to_split_on, strip_headers=False)
-
-    splitted_docs = []
-    for doc in docs:
-        chunks = text_splitter.split_text(doc.page_content)
-        splitted_docs += [
-            Document(
-                page_content=chunk.page_content,
-                metadata={
-                    **doc.metadata,
-                    **chunk.metadata
-                }
-            ) for chunk in chunks
-        ]
-    return splitted_docs
+async def initialize_db(chroma_path, collection_name, json_path, links):
+    if not os.path.exists(chroma_path):
+        logger.info('Сбор документов...')
+        if os.path.exists(json_path):
+            with open(json_path, 'r', encoding='utf-8') as f:
+                documents = json.load(f)
+                documents = chunks_from_md(dicts_to_documents(documents))
+        else:
+            documents = chunks_from_md(await parse_links(links))
+        return generate_vecdb(chroma_path, collection_name, documents)
+    return connect_to_vecdb(chroma_path, collection_name)
 
 
-def get_context(db, query):
-    relevant_docs = db.similarity_search_with_score(query, k=5)
-    context_parts = []
-    for doc, score in relevant_docs:
-        source = doc.metadata.get('source', 'Источник не указан')
-        context_parts.append(
-            f"{doc.page_content}\n"
-            f"Источник: {source}*\n"
-        )
-
-    context = "\n".join(context_parts)
-    return context
