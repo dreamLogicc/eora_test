@@ -107,6 +107,6 @@ python src/bot.py
 
 ## Пример работы приложения
 
-![]()
-![]()
+![](https://github.com/dreamLogicc/eora_test/blob/f2d27d6c4b12a1f984833d932f9eca8cfae618de/cli-example.png)
+![](https://github.com/dreamLogicc/eora_test/blob/f2d27d6c4b12a1f984833d932f9eca8cfae618de/telegram-example.png)
 
